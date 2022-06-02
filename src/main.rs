@@ -17,9 +17,10 @@ impl Args {
     fn zulu(&self) -> DateTime<Utc> {
         let date = Local::now().date();
         let time = self.time.unwrap_or_else(|| Local::now().into());
-        let hours = match self.meridian() {
-            Meridian::AM => time.hours,
-            Meridian::PM => time.hours + 12,
+        let hours = if time.hours < 12 && self.meridian().is_pm() {
+            time.hours + 12
+        } else {
+            time.hours
         };
         date.and_hms(hours.into(), time.minutes.into(), 0).into()
     }
@@ -84,6 +85,16 @@ enum Meridian {
     PM,
 }
 
+impl Meridian {
+    #[inline]
+    fn is_pm(self) -> bool {
+        match self {
+            Meridian::AM => false,
+            Meridian::PM => true,
+        }
+    }
+}
+
 impl FromStr for Meridian {
     type Err = MeridianErr;
 
@@ -119,22 +130,14 @@ impl fmt::Display for ParseHoursMinutesErr {
 impl std::error::Error for ParseHoursMinutesErr {}
 
 fn main() {
-    let args = Args::parse();
-
-    if let Err(e) = run(&args) {
-        eprintln!("{e}");
-        std::process::exit(1);
-    }
+    run(&Args::parse());
 }
 
-fn run(args: &Args) -> chrono::ParseResult<()> {
+fn run(args: &Args) {
     let zulu = args.zulu();
     let formatted_time = match &args.time_format {
         Some(fmt) => zulu.format(fmt),
         None => zulu.format("%R"),
     };
-
     println!("{formatted_time}");
-
-    Ok(())
 }
