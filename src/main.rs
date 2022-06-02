@@ -130,7 +130,7 @@ fn main() {
 fn run(args: &Args) -> chrono::ParseResult<()> {
     let zulu = args.zulu();
     let formatted_time = match &args.time_format {
-        Some(fmt) => zulu.format(&fmt),
+        Some(fmt) => zulu.format(fmt),
         None => zulu.format("%R"),
     };
 
